@@ -10,7 +10,7 @@ typedef struct src_node{
 int main(int argc, char *argv[]){
 
     const char * file_name = argv[1];
-    const int port_num = atoi(argv[2])
+    const int port_num = atoi(argv[2]);
     FILE * src_file;
     FILE * dst_file;
     char * line;
@@ -22,6 +22,7 @@ int main(int argc, char *argv[]){
 
     if (argc > 3){
         printf("wrong number of cmd line args\n");
+        printf("Usage: ./%s file_name\n", argv[0]);
         return -1;
     }
 
@@ -54,8 +55,8 @@ int main(int argc, char *argv[]){
             }
         }
         else{
-            node[i].ptr = fopen(line, "r");
-            if (node[i].ptr == NULL){
+            nodes[i].ptr = fopen(line, "r");
+            if (nodes[i].ptr == NULL){
                 printf("fopen input snippet file failed \n");
                 return -3;
             }
