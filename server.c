@@ -1,24 +1,7 @@
-#define _GNU_SOURCE
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <sys/socket.h>
-#include <netinet/ip.h>
-#include <arpa/inet.h>
-#include <stdint.h>
-#include <netdb.h>
-#include <sys/epoll.h>
-#include "rbtree.h"
-#include <ctype.h> // isspace
+#include "shared_func.c"
 
 #define LISTEN_BACKLOG 50
 #define MAX_EVENTS     10
-#define BUF_SIZE 2048
-#define TRUE 1
-#define FALSE 0
 #define EXPECTED_ARGS 3
 
 enum exit_values {
@@ -30,13 +13,9 @@ enum exit_values {
 
 typedef struct src_node {
     FILE * ptr;
+    size_t cur_size;
     char buf[BUF_SIZE];
 } src_node;
-
-typedef struct tree_node {
-    struct rb_node node;
-    char line[BUF_SIZE];
-} tree_node;
 
 int handle_error(char* msg) {
     printf("Program error in %s. Reason: %s\n", msg, strerror(errno));
@@ -77,6 +56,10 @@ void trim_trailing_whitespace(char* line) {
     }
 }
 
+//sideffects: 
+//inits connfect_fds
+//inits num_fragment files
+//
 int open_fragment_files(const char * src_file_name, src_node ** nodes, int** connect_fds, int* num_fragment_files) {
     FILE * src_file;
     FILE * dst_file;
@@ -110,7 +93,7 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
 
     i = 0;
     while (nread = getline(&line, &size, src_file) != -1){
-        trim_trailing_whitespace(line);
+        //trim_trailing_whitespace(line);
 
         if (i == 0){
             dst_file = fopen(line, "w");
@@ -120,11 +103,12 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
             }
         }
         else{
-            (*nodes)[i].ptr = fopen(line, "r");
+            (*nodes)[i].ptr = fopen(line, "r"); //check that we can open the file with r
             if ((*nodes)[i].ptr == NULL){
                 printf("issue with %s's line %d file name: %s\n", src_file_name, i, line);
                 return handle_error("fopen input snippet file");
             }
+            read_from_file(i, *nodes);
         }
         i++;
     }
@@ -151,75 +135,50 @@ int establish_socket(int* sfd, struct sockaddr_in* my_addr, int port_num) {
     return SUCCESS;
 } 
 
-int tree_insert(struct rb_root *root, tree_node *data) //code from kernel.org: official linux kernel archive
-{
-      struct rb_node **link = &(root->rb_node), *parent = NULL;
 
-      /* Figure out where to put link node */
-      while (*link) {
-            tree_node *this = rb_entry(*link, tree_node, node);
-            int result = strcmp(data->line, this->line);
-
-            parent = *link;
-            if (result < 0)
-                link = &((*link)->rb_left);
-            else if (result > 0)
-                link = &((*link)->rb_right);
-            else
-                return FALSE;
-      }
-
-      /* Add link node and rebalance tree. */
-      rb_link_node(&data->node, parent, link);
-      rb_insert_color(&data->node, root);
-
-      return TRUE;
-}
-
-void read_from_file(struct rb_root *root, int idx, src_node * nodes){
-    FILE * file_to_read = nodes[idx].ptr;
-    char* my_buf = nodes[idx].buf;
-    //read
-    //if complete
-        //make a tree_node
-    //else like do the shift
-}
-
-struct tree_node *tree_get_and_remove(struct rb_root *root, char *string) //code from kernel.org: official linux kernel archive
-{
-    struct rb_node *node = root->rb_node;
-
-    while (node) {
-        tree_node *data = rb_entry(node, tree_node, node);
-        int result;
-
-        result = strcmp(string, data->line);
-
-        if (result < 0)
-            node = node->rb_left;
-        else if (result > 0)
-            node = node->rb_right;
-        else
-            rb_erase(&data->node, root);
-            return data;
+//brings the src files into their buf
+void read_from_file(int idx, src_node * nodes){
+    FILE * file_to_read;
+    char* my_buf;
+    file_to_read = nodes[idx].ptr;
+    my_buf = nodes[idx].buf;
+    size_t newLen = fread(my_buf, sizeof(char), BUF_SIZE-1, file_to_read);
+    if ( ferror( file_to_read ) != 0 ) {
+        fputs("Error reading src file", stderr);
+    } else {
+        source[newLen++] = '\0';
     }
-    return NULL;
 }
 
-
+void full_write(int fd, char* buf, size_t count){
+    size_t written_amount, remaining;
+    ssize_t write_len;
+    written_amount = 0;
+    remaining = count;
+    while(remaining > 0){
+        write_len = write(fd, buf+written_amount, remaining);
+        if(write_len == -1){
+            handle_error("full write");
+            return;
+        }
+        written_amount += write_len;
+        remaining -= write_len;
+    }
+}
 
 int main(int argc, char *argv[]){
     char * file_name;
     int port_num, num_fragment_files;
     struct sockaddr_in my_addr, peer_addr;
     socklen_t peer_addr_size;
-    int epfd, sfd, finished_clients;
+    int epfd, sfd, finished_clients, started_clients;
     struct epoll_event events[MAX_EVENTS];
     int * connect_fds;
     src_node * nodes;
-    int i, j, n, ret, fd;
+    int i, j, n, ret, fd, client_fd;
     uint32_t ev_mask;
     struct rb_root mytree;
+    char* temp_buf;
 
     mytree = RB_ROOT;
 
@@ -246,26 +205,47 @@ int main(int argc, char *argv[]){
     epfd = epoll_create1(0);
     if (epfd == -1) return handle_error("epoll_create1()");
 
+    started_clients = 0;
     finished_clients = 0;
-    for(;;) {
+    client_fd = -1;
+    temp_buf = malloc(BUF_SIZE);
+    while(finished_clients != num_fragment_files) {
         n = epoll_wait(epfd, events, MAX_EVENTS, -1);
         if (n == -1) {
             return handle_error("epoll_wait()");
         }
-        for (i = 0; i < n; i++) { //bc epoll can see multiple events ready at the same time gotta loop
+        for (i = 0; i < n; i++) { //bc epoll can see multiple events ready at the same time we have to loop
             fd = events[i].data.fd;
             ev_mask = events[i].events;
             if(fd == sfd){
                 //accept the connection
                 //send them a chunk
-                //do the bookkeeping
+                //increment started_clients count
+                peer_addr_size = sizeof(peer_addr);
+                client_fd = accept(sfd, NULL, NULL);
+                if (client_fd == -1) handle_error("accept");
+                printf("client connected\n");
+                fflush(stdout);
+
+                struct epoll_event cev;
+                cev.events  = EPOLLIN | EPOLLRDHUP;
+                cev.data.fd = client_fd;
+                if (epoll_ctl(epfd, EPOLL_CTL_ADD, client_fd, &cev) == -1)
+                    handle_error("epoll_ctl add client");
+                
+                //wrapper on write that makes sure it does a full write
+                full_write(clinet_fd, nodes[started_clients].buf, nodes[started_clients].cur_size); 
+                started_clients++;
+
             } else{
                 for(j = 0; j < MAX_EVENTS; j++){
                     if(fd == connect_fds[j]){
                         if (ev_mask & EPOLLIN) {
+                            //read(fd, )
                             //read in their desc
                             //if full read then add it to the rb tree
                             //repeat til short read
+                            
                         }
                         if(ev_mask & EPOLLRDHUP){
                             finished_clients++;
@@ -274,16 +254,11 @@ int main(int argc, char *argv[]){
                 }
             }
         }
-        if(finished_clients == num_fragment_files){
-            //all of our chunks have been processed
-            break;
-        }
     }
 
     //all of the clients are done so the red black tree is finished
     
     //extract all of the nodes and then write it to the file
-
     
     // TODO free all the mallocs
     return 0;

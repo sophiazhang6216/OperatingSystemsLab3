@@ -318,3 +318,61 @@ static inline void rb_erase(struct rb_node *node, struct rb_root *root) {
 
     if (color == RB_BLACK) __rb_erase_color(root, child, parent);
 }
+
+//rest of code is human written by me :)
+
+#define BUF_SIZE 2048
+#define TRUE 1
+#define FALSE 0
+
+typedef struct tree_node {
+    struct rb_node node;
+    size_t cur_size;
+    char line[BUF_SIZE];
+} tree_node;
+
+struct tree_node *tree_get_and_remove(struct rb_root *root, char *string) //code from kernel.org: official linux kernel archive
+{
+    struct rb_node *node = root->rb_node;
+
+    while (node) {
+        tree_node *data = rb_entry(node, tree_node, node);
+        int result;
+
+        result = strcmp(string, data->line);
+
+        if (result < 0)
+            node = node->rb_left;
+        else if (result > 0)
+            node = node->rb_right;
+        else
+            rb_erase(&data->node, root);
+            return data;
+    }
+    return NULL;
+}
+
+int tree_insert(struct rb_root *root, tree_node *data) //code from kernel.org: official linux kernel archive
+{
+      struct rb_node **link = &(root->rb_node), *parent = NULL;
+
+      /* Figure out where to put link node */
+      while (*link) {
+            tree_node *this = rb_entry(*link, tree_node, node);
+            int result = strcmp(data->line, this->line);
+
+            parent = *link;
+            if (result < 0)
+                link = &((*link)->rb_left);
+            else if (result > 0)
+                link = &((*link)->rb_right);
+            else
+                return FALSE;
+      }
+
+      /* Add link node and rebalance tree. */
+      rb_link_node(&data->node, parent, link);
+      rb_insert_color(&data->node, root);
+
+      return TRUE;
+}
