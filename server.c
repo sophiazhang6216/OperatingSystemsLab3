@@ -132,6 +132,25 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
     return SUCCESS;
 }
 
+int establish_socket(int* sfd, struct sockaddr_in* my_addr, int port_num) {
+    *sfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (*sfd == -1) 
+        return handle_error("socket()");
+
+    memset(my_addr, 0, sizeof(*my_addr));
+    (*my_addr).sin_family = AF_INET;
+    (*my_addr).sin_port = htons(port_num);
+    (*my_addr).sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(*sfd, (struct sockaddr*) my_addr, sizeof(*my_addr)) == -1)
+        return handle_error("bind()");
+        
+    if (listen(*sfd, LISTEN_BACKLOG) == -1)
+        return handle_error("listen()");
+
+    return SUCCESS;
+} 
+
 int tree_insert(struct rb_root *root, tree_node *data) //code from kernel.org: official linux kernel archive
 {
       struct rb_node **link = &(root->rb_node), *parent = NULL;
@@ -217,30 +236,18 @@ int main(int argc, char *argv[]){
     port_num = atoi(argv[2]);
 
     ret = open_fragment_files(file_name, &nodes, &connect_fds, &num_fragment_files);
-    if (ret != SUCCESS) {
-        return ret; // message for specific error reason is printed out within function
-    }
+    if (ret != SUCCESS) return ret; // error reason printed within called function
 
     printf("about to socket\n");
 
-    sfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sfd == -1) return handle_error("socket()");
-
-    memset(&my_addr, 0, sizeof(my_addr));
-    my_addr.sin_family = AF_INET;
-    my_addr.sin_port = htons(port_num);
-    my_addr.sin_addr.s_addr = INADDR_ANY;
-
-    if (bind(sfd, (struct sockaddr *)&my_addr, sizeof(my_addr)) == -1)
-        return handle_error("bind()");
-    if (listen(sfd, LISTEN_BACKLOG) == -1)
-        return handle_error("listen()");
+    ret = establish_socket(&sfd, &my_addr, port_num);
+    if (ret != SUCCESS) return ret; // error reason printed within called function
 
     epfd = epoll_create1(0);
     if (epfd == -1) return handle_error("epoll_create1()");
 
     finished_clients = 0;
-    for(;;){
+    for(;;) {
         n = epoll_wait(epfd, events, MAX_EVENTS, -1);
         if (n == -1) {
             return handle_error("epoll_wait()");
