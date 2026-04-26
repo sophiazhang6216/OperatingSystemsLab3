@@ -43,6 +43,7 @@ int main (int argc, char *argv[]){
     char * temp_str;
     ssize_t buf_len;
     size_t ubuf_len;
+    size_t wrote;
     char dest_buf[BUF_SIZE];
 
 
@@ -76,6 +77,7 @@ int main (int argc, char *argv[]){
         return handle_error("connect");
     }
 
+    //trying to read the whole buffer, buf_len indicates how many bytes were actually read
     buf_len = read(sfd, buf, BUF_SIZE);
     if (buf_len = -1){
         return handle_error("read");
@@ -84,15 +86,23 @@ int main (int argc, char *argv[]){
     //cast to unsigned bc we know that its not negative --> we can safely cast positive to unsigned
     ubuf_len = (size_t) buf_len;
 
+    //adding node to rb tree
     while (get_one_line(&buf, ubuf_len, &dest_buf)){
         add_to_tree(&root, buf_len, &dest_buf);
     }
     
     while (dest_buf != NULL){
-
+        // remove top node from rb tree
+        //TODO: add function by andy!!!!
+        //send buf to server
+        wrote = write(sfd, dest_buf, ubuf_len);
     }
 
+    //hang up
+    close(sfd);
 
+    //returning an enum indicating success
+    return SUCCESS;
 
     
 
