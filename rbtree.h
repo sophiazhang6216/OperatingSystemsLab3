@@ -8,6 +8,8 @@
 
 #pragma once
 #include <stddef.h>
+#include <string.h>
+#include <unistd.h>
 
 // ── types ────────────────────────────────────────────────────────────────────
 
@@ -350,6 +352,32 @@ struct tree_node *tree_get_and_remove(struct rb_root *root, char *string) //code
             return data;
     }
     return NULL;
+}
+
+int tree_print(struct rb_root *root, int fd)
+{
+    struct rb_node *n;
+    tree_node *data;
+    size_t len;
+    size_t off;
+    ssize_t w;
+    char nl;
+
+    nl = '\n';
+    for (n = rb_first(root); n; n = rb_next(n)) {
+        data = rb_entry(n, tree_node, node);
+        len = data->cur_size;
+        off = 0;
+        while (off < len) {
+            w = write(fd, data->line + off, len - off);
+            if (w < 0) return -1;
+            off += (size_t)w;
+        }
+        if (len == 0 || data->line[len - 1] != '\n') {
+            if (write(fd, &nl, 1) < 0) return -1;
+        }
+    }
+    return 0;
 }
 
 int tree_insert(struct rb_root *root, tree_node *data) //code from kernel.org: official linux kernel archive

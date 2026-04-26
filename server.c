@@ -110,6 +110,8 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
         return handle_error("malloc connect_fds");
     }
 
+    //TODO set all the connnect_fds to -1
+
     *nodes = (src_node *)malloc(sizeof(src_node)*(*num_fragment_files));
     if (*nodes == NULL) {
         return handle_error("malloc nodes");
@@ -248,14 +250,14 @@ int main(int argc, char *argv[]){
                     handle_error("epoll_ctl add client");
                 
                 //wrapper on write that makes sure it does a full write
-                full_write(client_fd, nodes[started_clients].buf, nodes[started_clients].cur_size); 
+                full_write(clinet_fd, nodes[started_clients].buf, nodes[started_clients].cur_size); 
+                connect_fds[started_clients] = client_fd;
                 started_clients++;
 
             } else{
-                for(j = 0; j < MAX_EVENTS; j++){
+                for(j = 0; j < num_fragment_files; j++){
                     if(fd == connect_fds[j]){
                         if (ev_mask & EPOLLIN) {
-                            //read(fd, )
                             //read in their desc
                             //if full read then add it to the rb tree
                             //repeat til short read
