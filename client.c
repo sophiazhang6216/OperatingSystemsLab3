@@ -79,7 +79,6 @@ int main (int argc, char *argv[]) {
     while (dest_buf != NULL){
         //send buf to server
         tree_print(&root, sfd);
-        //TODO: remove top node from rb tree
     }
 
     //hang up

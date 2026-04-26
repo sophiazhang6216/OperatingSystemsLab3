@@ -333,27 +333,6 @@ typedef struct tree_node {
     char line[BUF_SIZE];
 } tree_node;
 
-struct tree_node *tree_get_and_remove(struct rb_root *root, char *string) //code from kernel.org: official linux kernel archive
-{
-    struct rb_node *node = root->rb_node;
-
-    while (node) {
-        tree_node *data = rb_entry(node, tree_node, node);
-        int result;
-
-        result = strcmp(string, data->line);
-
-        if (result < 0)
-            node = node->rb_left;
-        else if (result > 0)
-            node = node->rb_right;
-        else
-            rb_erase(&data->node, root);
-            return data;
-    }
-    return NULL;
-}
-
 int tree_print(struct rb_root *root, int fd)
 {
     struct rb_node *n;
@@ -377,6 +356,16 @@ int tree_print(struct rb_root *root, int fd)
             if (write(fd, &nl, 1) < 0) return -1;
         }
     }
+    return 0;
+}
+
+int free_tree(struct rb_root *root){
+    // struct rb_node *pos;
+
+    // for (pos = rb_first(root); pos != NULL; pos = rb_next(pos)){
+
+    // }
+
     return 0;
 }
 

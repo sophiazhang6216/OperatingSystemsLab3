@@ -5,6 +5,7 @@
 #define MAX_EVENTS     10
 #define EXPECTED_ARGS 3
 #define SHELL_IP_ADDR "128.252.167.161" // found in studio 18
+#define INF_TIMEOUT -1
 
 enum exit_values {
     SUCCESS = 0,
@@ -96,7 +97,7 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
     ssize_t nread;
     size_t size;
     char * line;
-    int line_count, i, ret;
+    int line_count, i, ret, idx;
 
     ret = count_lines_in_file(src_file_name, &line_count);
     if (ret != SUCCESS) {
@@ -135,12 +136,13 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
             }
         }
         else{
-            (*nodes)[i].ptr = fopen(line, "r"); //check that we can open the file with r
-            if ((*nodes)[i].ptr == NULL){
+            idx = i - 1;
+            (*nodes)[idx].ptr = fopen(line, "r"); //check that we can open the file with r
+            if ((*nodes)[idx].ptr == NULL){
                 printf("issue with %s's line %d file name: '%s'\n", src_file_name, i, line);
                 return handle_error("fopen input snippet file");
             }
-            read_from_file(i, *nodes);
+            read_from_file(idx, *nodes);
         }
         i++;
     }
@@ -172,15 +174,24 @@ void full_write(int fd, char* buf, size_t count){
     ssize_t write_len;
     written_amount = 0;
     remaining = count;
-    while(remaining > 0){
-        write_len = write(fd, buf+written_amount, remaining);
-        if(write_len == -1){
-            handle_error("full write");
-            return;
-        }
-        written_amount += write_len;
-        remaining -= write_len;
+
+    write_len = write(fd, "hi", 3);
+    if(write_len == -1){
+        handle_error("full_write()");
+        return;
     }
+
+    // while(remaining > 0){
+    //     printf("writing to client at fd %d", fd);
+    //     fflush(stdout);
+    //     write_len = write(fd, buf+written_amount, remaining);
+    //     if(write_len == -1){
+    //         handle_error("full_write()");
+    //         return;
+    //     }
+    //     written_amount += write_len;
+    //     remaining -= write_len;
+    // }
 }
 
 //root, fd, temp_buf, nodes[j].buf, &nodes[j].cur_size
@@ -266,18 +277,30 @@ int main(int argc, char *argv[]){
     epfd = epoll_create1(0);
     if (epfd == -1) return handle_error("epoll_create1()");
 
+    struct epoll_event lis; 
+    lis.events = EPOLLIN;
+    lis.data.fd = sfd;
+    if (epoll_ctl(epfd, EPOLL_CTL_ADD, sfd, &lis) == -1)
+        handle_error("epoll_ctl add listener");
+    
+
     started_clients = 0;
     finished_clients = 0;
     client_fd = -1;
     temp_buf = malloc(BUF_SIZE);
     while(finished_clients != num_fragment_files) {
-        n = epoll_wait(epfd, events, MAX_EVENTS, -1);
+        printf("waiting\n");
+        fflush(stdout);
+        n = epoll_wait(epfd, events, MAX_EVENTS, INF_TIMEOUT);
         if (n == -1) {
             return handle_error("epoll_wait()");
         }
+        printf("about to for loop\n");
+        fflush(stdout);
         for (i = 0; i < n; i++) { //bc epoll can see multiple events ready at the same time we have to loop
             fd = events[i].data.fd;
-            printf("connection on fd %d", fd);
+            printf("connection on fd %d\n\n", fd);
+            fflush(stdout);
             ev_mask = events[i].events;
             if(fd == sfd){
                 //accept the connection
