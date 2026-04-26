@@ -1,4 +1,4 @@
-#include "shared_func.c"
+#include "shared_func.h"
 #include <fcntl.h>
 
 #define LISTEN_BACKLOG 50
@@ -33,7 +33,7 @@ int count_lines_in_file(const char * src_file_name, int* line_count) {
         return handle_error("fopen source file");
     }
 
-    while (nread = getline(&line, &size, src_file) != -1) {
+    while ((nread = getline(&line, &size, src_file)) != -1) {
         (*line_count)++;
     }
 
@@ -84,7 +84,8 @@ void read_from_file(int idx, src_node * nodes){
     if ( ferror( file_to_read ) != 0 ) {
         fputs("Error reading src file", stderr);
     } else {
-        my_buf[newLen++] = '\0'; //TODO FIXME used to be source[newLen++] = '\0'; - is my_buf the right change?
+        my_buf[newLen++] = '\0';
+        nodes[idx].cur_size = newLen;
     }
 }
 
@@ -125,7 +126,7 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
     }
 
     i = 0;
-    while (nread = getline(&line, &size, src_file) != -1){
+    while ((nread = getline(&line, &size, src_file)) != -1){
         line = trim_whitespace(line);
 
         if (i == 0){
@@ -175,23 +176,17 @@ void full_write(int fd, char* buf, size_t count){
     written_amount = 0;
     remaining = count;
 
-    write_len = write(fd, "hi", 3);
-    if(write_len == -1){
-        handle_error("full_write()");
-        return;
+    while(remaining > 0){
+        printf("writing to client at fd %d", fd);
+        fflush(stdout);
+        write_len = write(fd, buf+written_amount, remaining);
+        if(write_len == -1){
+            handle_error("full_write()");
+            return;
+        }
+        written_amount += write_len;
+        remaining -= write_len;
     }
-
-    // while(remaining > 0){
-    //     printf("writing to client at fd %d", fd);
-    //     fflush(stdout);
-    //     write_len = write(fd, buf+written_amount, remaining);
-    //     if(write_len == -1){
-    //         handle_error("full_write()");
-    //         return;
-    //     }
-    //     written_amount += write_len;
-    //     remaining -= write_len;
-    // }
 }
 
 //root, fd, temp_buf, nodes[j].buf, &nodes[j].cur_size

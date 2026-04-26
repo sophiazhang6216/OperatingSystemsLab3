@@ -1,18 +1,4 @@
-#define _GNU_SOURCE
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h> // unlink
-#include <errno.h>
-#include <sys/socket.h>
-#include <netinet/ip.h>
-#include <arpa/inet.h> //htonl
-#include <stdint.h>
-#include <netdb.h>
-#include <sys/epoll.h>
-#include "rbtree.h"
-#include <ctype.h> // isspace
+#include "shared_func.h"
 
 
 //give it the buf and some where to put the new line and it will move it there
@@ -52,4 +38,67 @@ void add_to_tree(struct rb_root * root, size_t str_len, char * src) {
     t->cur_size = str_len;
     memcpy(t->line, src, str_len);
     tree_insert(root, t);
+}
+
+int tree_print(struct rb_root *root, int fd)
+{
+    struct rb_node *n;
+    tree_node *data;
+    size_t len;
+    size_t off;
+    ssize_t w;
+    char nl;
+
+    nl = '\n';
+    for (n = rb_first(root); n; n = rb_next(n)) {
+        data = rb_entry(n, tree_node, node);
+        len = data->cur_size;
+        off = 0;
+        while (off < len) {
+            w = write(fd, data->line + off, len - off);
+            if (w < 0) return -1;
+            off += (size_t)w;
+        }
+        if (len == 0 || data->line[len - 1] != '\n') {
+            if (write(fd, &nl, 1) < 0) return -1;
+        }
+    }
+    return 0;
+}
+
+int free_tree(struct rb_root *root){
+    struct rb_node *pos;
+
+    while (rb_next(pos) != NULL){
+        rb_erase(pos, root);
+        free(pos);
+    }
+
+    return 0;
+}
+
+
+//code from kernel.org: official linux kernel archive
+int tree_insert(struct rb_root *root, tree_node *data) {
+      struct rb_node **link = &(root->rb_node), *parent = NULL;
+
+      /* Figure out where to put link node */
+      while (*link) {
+            tree_node *this = rb_entry(*link, tree_node, node);
+            int result = strcmp(data->line, this->line);
+
+            parent = *link;
+            if (result < 0)
+                link = &((*link)->rb_left);
+            else if (result > 0)
+                link = &((*link)->rb_right);
+            else
+                return FALSE;
+      }
+
+      /* Add link node and rebalance tree. */
+      rb_link_node(&data->node, parent, link);
+      rb_insert_color(&data->node, root);
+
+      return TRUE;
 }

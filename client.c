@@ -63,7 +63,7 @@ int main (int argc, char *argv[]) {
 
     //trying to read the whole buffer, buf_len indicates how many bytes were actually read
     buf_len = read(sfd, buf, BUF_SIZE);
-    if (buf_len = -1){
+    if (buf_len == -1){
         return handle_error("read()");
     }
 
