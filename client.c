@@ -7,13 +7,11 @@
 
 #define EXPECTED_ARGS 3
 #define LOCAL_LOOPBACK_IP "127.0.0.1"
+#define SERVER_NAME_INDEX 0
+#define INET_ADDR_INDEX 1
+#define PORT_NUM_INDEX 2
 
-enum exit_values {
-    SUCCESS = 0,
-    WRONG_NUM_ARGS
-    // other return values are the errno for the failure reason -
-    // specific function that caused the error is printed to stdout
-};
+
 
 int main (int argc, char *argv[]) {
     char * inet_addr;
@@ -30,13 +28,13 @@ int main (int argc, char *argv[]) {
     root = RB_ROOT;
 
     if (argc != EXPECTED_ARGS) {
-        printf("Usage: %s <internet address> <port number>\n", argv[0]);
-        printf("Example: %s 127.0.0.1 35000\n", argv[0]);
+        printf("Usage: %s <internet address> <port number>\n", argv[SERVER_NAME_INDEX]);
+        printf("Example: %s 127.0.0.1 35000\n", argv[SERVER_NAME_INDEX]);
         return WRONG_NUM_ARGS;
     }
 
-    inet_addr = argv[1];
-    port_num = atoi(argv[2]);
+    inet_addr = argv[INET_ADDR_INDEX];
+    port_num = atoi(argv[PORT_NUM_INDEX]);
 
     sfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sfd == -1) {
@@ -48,7 +46,7 @@ int main (int argc, char *argv[]) {
     my_addr.sin_port = htons(port_num);
 
     ret = inet_aton(inet_addr, &my_addr.sin_addr); 
-    if (ret == 0) {
+    if (ret == SUCCESS) {
         return handle_error("inet_aton()");
     }
 
@@ -57,7 +55,7 @@ int main (int argc, char *argv[]) {
         printf("\nIf off-campus, run the following command on your pi:\n");
         printf("ssh -f -N <your-username>@shell.cec.wustl.edu -L %d:shell.cec.wustl.edu:%d\n\n", port_num, port_num);
         printf("After, you should run this program from 127.0.0.1:\n");
-        printf("%s 127.0.0.1 %d\n\n", argv[0], port_num);
+        printf("%s 127.0.0.1 %d\n\n", argv[SERVER_NAME_INDEX], port_num);
         return handle_error("connect()");
     }
 
@@ -88,6 +86,7 @@ int main (int argc, char *argv[]) {
 
     //hang up
     close(sfd);
+    free_tree(&root);
 
     //returning an enum indicating success
     return SUCCESS;

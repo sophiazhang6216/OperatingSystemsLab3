@@ -10,14 +10,16 @@ int handle_error(char* msg) {
     return errno;
 }
 
+//getting one line from buf
 int get_one_line(char *buf, size_t* cur_size, char * dest) {
     size_t len;
     char *start, *end, *nl;
     start = buf;
     end   = buf + *cur_size;
+    int num_lines_read = 0; //keeping track of how many lines were read, success should be return 1
 
     if ((nl = memchr(start, '\n', end - start)) == NULL) {
-        return 0; // TODO remove magic number
+        return num_lines_read; //fail
     }
 
     len = (size_t)(nl - start + 1);
@@ -26,7 +28,8 @@ int get_one_line(char *buf, size_t* cur_size, char * dest) {
     start = nl + 1;
     *cur_size = (size_t)(end - start); //move extra to the start
     memmove(buf, start, *cur_size); //memcpy is gonna blow up bc overlap
-    return 1; // TODO remove magic number
+    num_lines_read++;
+    return num_lines_read; // success yay
 }
 
 //creates a copy of src - src[str_len], put all the info into a tree_node and inserts it into the tree
@@ -41,13 +44,14 @@ void add_to_tree(struct rb_root * root, size_t str_len, char * src) {
     }
     t->cur_size = str_len;
     memcpy(t->line, src, str_len);
-    temp = strtol(src, &end, 10);
+    temp = strtol(src, &end, BASE_10);
     if(end == src){
         return;
     }
     t->line_num = (int)temp;
     tree_insert(root, t);
 }
+
 
 int tree_print(struct rb_root *root, int fd)
 {
@@ -58,7 +62,7 @@ int tree_print(struct rb_root *root, int fd)
     ssize_t w;
     char nl;
 
-    nl = '\n';
+    nl = '\n'; // new line character
     for (n = rb_first(root); n; n = rb_next(n)) {
         data = rb_entry(n, tree_node, node);
         len = data->cur_size;
@@ -77,9 +81,10 @@ int tree_print(struct rb_root *root, int fd)
             if (write(fd, &nl, 1) < 0) return -1;
         }
     }
-    return 0;
+    return SUCCESS;
 }
 
+//goes through the entire tree to remove and free all nodes
 int free_tree(struct rb_root *root){
     struct rb_node *pos;
 
@@ -88,7 +93,7 @@ int free_tree(struct rb_root *root){
         free(pos);
     }
 
-    return 0;
+    return SUCCESS;
 }
 
 
@@ -118,4 +123,3 @@ int tree_insert(struct rb_root *root, tree_node *data) {
       return TRUE;
 }
 
-//TODO update result and updat the add_to_tree to get the proper field

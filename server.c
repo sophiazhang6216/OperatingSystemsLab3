@@ -6,13 +6,11 @@
 #define EXPECTED_ARGS 3
 #define SHELL_IP_ADDR "128.252.167.161" // found in studio 18
 #define INF_TIMEOUT -1
-
-enum exit_values {
-    SUCCESS = 0,
-    WRONG_NUM_ARGS
-    // other return values are the errno for the failure reason -
-    // specific function that caused the error is printed to stdout
-};
+#define INVALID_FD -1
+#define FILE_NAME_IDX 1
+#define PORT_NUM_IDX 2
+#define NO_FLAGS 0
+#define PROTOCOL 0
 
 typedef struct src_node {
     FILE * ptr;
@@ -116,7 +114,7 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
 
     //as is good practice all unconnected fd are set to -1
     for (i = 0; i < *num_fragment_files; i++) {
-        (*connect_fds)[i] = -1;
+        (*connect_fds)[i] = INVALID_FD;
     }
 
     *nodes = (src_node *)malloc(sizeof(src_node)*(*num_fragment_files));
@@ -134,8 +132,8 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
         line = trim_whitespace(line);
 
         if (i == 0){
-            *dst_fd = open(line, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-            if (*dst_fd == -1){
+            *dst_fd = open(line, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR); // TODO if the code broke put this back to 0644
+            if (*dst_fd == INVALID_FD){
                 printf("destination file name: %s\n", line);
                 return handle_error("open destination file");
             }
@@ -157,8 +155,8 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
 
 //creates a listening sockets
 int establish_socket(int* sfd, struct sockaddr_in* my_addr, int port_num) {
-    *sfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (*sfd == -1) 
+    *sfd = socket(AF_INET, SOCK_STREAM, PROTOCOL);
+    if (*sfd == INVALID_FD) 
         return handle_error("socket()");
 
     memset(my_addr, 0, sizeof(*my_addr));
@@ -229,7 +227,7 @@ void read_from_socket_and_add_to_tree(struct rb_root *root, int sfd, char * temp
         printf("node->line: %s\n", node->line);
         fflush(stdout);
         node->cur_size = line_len;
-        node->line_num = (int)(strtol(node->line, &tmp, 10));
+        node->line_num = (int)(strtol(node->line, &tmp, BASE_10));
         if(tmp != node->line){
             tree_insert(root, node);
         } else{
@@ -272,8 +270,8 @@ int main(int argc, char *argv[]){
         return WRONG_NUM_ARGS;
     }
 
-    file_name = argv[1];
-    port_num = atoi(argv[2]);
+    file_name = argv[FILE_NAME_IDX];
+    port_num = atoi(argv[PORT_NUM_IDX]);
 
     ret = open_fragment_files(file_name, &nodes, &connect_fds, &num_fragment_files, &dst_fd);
     if (ret != SUCCESS) return ret; // error reason printed within called function
@@ -283,19 +281,19 @@ int main(int argc, char *argv[]){
 
     printf("Clients should connect to %s port %d\n", SHELL_IP_ADDR, port_num);
 
-    epfd = epoll_create1(0);
+    epfd = epoll_create1(NO_FLAGS); //creates the epoll object
     if (epfd == -1) return handle_error("epoll_create1()");
 
     struct epoll_event lis; 
     lis.events = EPOLLIN;
     lis.data.fd = sfd;
-    if (epoll_ctl(epfd, EPOLL_CTL_ADD, sfd, &lis) == -1)
+    if (epoll_ctl(epfd, EPOLL_CTL_ADD, sfd, &lis) == -1) //registers the listening sockets for epoll obj
         handle_error("epoll_ctl add listener");
     
 
-    started_clients = 0;
+    started_clients = 0; //these variables tell the server when to stop looking for more connections
     finished_clients = 0;
-    client_fd = -1;
+    client_fd = INVALID_FD;
     temp_buf = malloc(BUF_SIZE);
     while(finished_clients != num_fragment_files) {
         printf("waiting\n");
@@ -313,14 +311,11 @@ int main(int argc, char *argv[]){
             ev_mask = events[i].events;
             if(fd == sfd){
                 //accept the connection
-                //send them a chunk
-                //increment started_clients count
                 peer_addr_size = sizeof(peer_addr);
                 client_fd = accept(sfd, NULL, NULL);
-                if (client_fd == -1) handle_error("accept");
+                if (client_fd == INVALID_FD) handle_error("accept");
                 printf("client connected\n");
                 fflush(stdout);
-
                 struct epoll_event cev;
                 cev.events  = EPOLLIN | EPOLLRDHUP;
                 cev.data.fd = client_fd;
@@ -331,18 +326,22 @@ int main(int argc, char *argv[]){
                 full_write(client_fd, nodes[started_clients].buf, nodes[started_clients].cur_size); 
                 connect_fds[started_clients] = client_fd;
                 started_clients++;
+                if(started_clients >= num_fragment_filgies){ //when we hand out the last fragment stop listening
+                    epoll_ctl(epfd, EPOLL_CTL_DEL, sfd, NULL);
+                    close(sfd);
+                }
 
             } else{
                 for(j = 0; j < num_fragment_files; j++){
                     if(fd == connect_fds[j]){
-                        if (ev_mask & EPOLLIN) {
+                        if (ev_mask & EPOLLIN) { //if they have data to read
                             read_from_socket_and_add_to_tree(&mytree, fd, temp_buf, nodes[j].buf, &nodes[j].cur_size);
                         }
-                        if (ev_mask & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
+                        if (ev_mask & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) { //if they stopped connection
                             finished_clients++;
                             epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL);
                             close(fd);
-                            connect_fds[j] = -1;
+                            connect_fds[j] = INVALID_FD; //set it -1 so we don't ever try to use it
                         }
                         break;
                     }
@@ -355,7 +354,11 @@ int main(int argc, char *argv[]){
     //extract all of the nodes and then write it to the file
     tree_print(&mytree, dst_fd);
     
-    // TODO free all the mallocs
-    return 0;
+    //free all the mallocs
+    free_tree(&mytree);
+    free(connect_fds);
+    free(nodes);
+    free(temp_buf);
 
+    return  SUCCESS;
 }

@@ -19,6 +19,7 @@
 #define BUF_SIZE 2048
 #define TRUE 1
 #define FALSE 0
+#define BASE_10 10
 
 typedef struct tree_node {
     struct rb_node node;
@@ -26,6 +27,13 @@ typedef struct tree_node {
     char line[BUF_SIZE];
     int line_num;
 } tree_node;
+
+enum exit_values {
+    SUCCESS = 0,
+    WRONG_NUM_ARGS
+    // other return values are the errno for the failure reason -
+    // specific function that caused the error is printed to stdout
+};
 
 int handle_error(char* msg);
 int get_one_line(char *buf, size_t* cur_size, char * dest);
