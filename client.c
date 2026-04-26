@@ -3,7 +3,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <stdbool.h>
-#include "shared_func.c"
+#include "shared_func.h"
 
 #define EXPECTED_ARGS 3
 #define LOCAL_LOOPBACK_IP "127.0.0.1"
