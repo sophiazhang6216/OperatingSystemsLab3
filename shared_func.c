@@ -3,11 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <unistd.h> // unlink
 #include <errno.h>
 #include <sys/socket.h>
 #include <netinet/ip.h>
-#include <arpa/inet.h>
+#include <arpa/inet.h> //htonl
 #include <stdint.h>
 #include <netdb.h>
 #include <sys/epoll.h>
@@ -24,15 +24,14 @@ int handle_error(char* msg) {
     return errno;
 }
 
-int get_one_line(char *buf, size_t* cur_size, char * dest)
-{
+int get_one_line(char *buf, size_t* cur_size, char * dest) {
     size_t len;
     char *start, *end, *nl;
     start = buf;
     end   = buf + *cur_size;
 
     if ((nl = memchr(start, '\n', end - start)) == NULL) {
-        return 0;
+        return 0; // TODO remove magic number
     }
 
     len = (size_t)(nl - start + 1);
@@ -40,11 +39,11 @@ int get_one_line(char *buf, size_t* cur_size, char * dest)
     start = nl + 1;
     *cur_size = (size_t)(end - start); //move extra to the start
     memmove(buf, start, *cur_size); //memcpy is gonna blow up bc overlap
-    return 1;
+    return 1; // TODO remove magic number
 }
 
 //creates a copy of src - src[str_len], put all the info into a tree_node and inserts it into the tree
-void add_to_tree(struct rb_root *root, size_t str_len, char* src){
+void add_to_tree(struct rb_root * root, size_t str_len, char * src) {
     tree_node* t;
     t = malloc(sizeof(*t));
     if(t == NULL){

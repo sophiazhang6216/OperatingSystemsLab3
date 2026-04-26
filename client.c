@@ -1,63 +1,40 @@
 #define _GNU_SOURCE
 
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/un.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h> // unlink
-#include <arpa/inet.h> //htonl
 #include <stdbool.h>
-#include "rbtree.h"
 #include "shared_func.c"
 
 #define EXPECTED_ARGS 3
 #define LOCAL_LOOPBACK_IP "127.0.0.1"
-
 
 enum exit_values {
     SUCCESS = 0,
     WRONG_NUM_ARGS
     // other return values are the errno for the failure reason -
     // specific function that caused the error is printed to stdout
-}
+};
 
-
-int handle_error(char* msg) {
-    printf("Program error in %s, reason: %s\n", msg, strerror(errno));
-    return errno;
-}
-
-
-int main (int argc, char *argv[]){
-
+int main (int argc, char *argv[]) {
     char * inet_addr;
-    int port_num;
-    int sfd;
+    int port_num, sfd;
+    int i, ret;
     struct sockaddr_in my_addr;
-    struct tree_node root;
-    char buf[BUF_SIZE];
-    int i;
-    char * temp_str;
+    struct rb_root root;
     ssize_t buf_len;
-    size_t ubuf_len;
-    size_t wrote;
+    size_t ubuf_len, wrote;
+    char * temp_str;
+    char buf[BUF_SIZE];
     char dest_buf[BUF_SIZE];
 
-
-    if (argc != EXPECTED_ARGS){ //TODO: change this to client specific
-        printf("Usage: %s <input_file_name> <port number>\n", argv[0]);
-        printf("    input file should be formatted as follows:\n");
-        printf("    first line: output file name\n");
-        printf("    subsequent lines: file names of input fragments (one per line)\n");
-        printf("    note: file names should not contain spaces\n");
+    if (argc != EXPECTED_ARGS) {
+        printf("Usage: %s <internet address> <port number>\n", argv[0]);
+        printf("Example: %s 127.0.0.1 35000\n", argv[0]);
         return WRONG_NUM_ARGS;
     }
 
     inet_addr = argv[1];
-    port_num = argv[2];
+    port_num = atoi(argv[2]);
 
     sfd = socket(AF_INET, SOCK_STREAM, 0);
     if (ret == -1) {
@@ -87,8 +64,9 @@ int main (int argc, char *argv[]){
     ubuf_len = (size_t) buf_len;
 
     //adding node to rb tree
-    while (get_one_line(&buf, ubuf_len, &dest_buf)){
-        add_to_tree(&root, buf_len, &dest_buf);
+    while (get_one_line(buf, &ubuf_len, dest_buf)) { 
+        // can cast dest_buf to char* bc buf_len ensures the missing '\0' is ok
+        add_to_tree(&root, buf_len, (char*)dest_buf);
     }
     
     while (dest_buf != NULL){
@@ -103,13 +81,5 @@ int main (int argc, char *argv[]){
 
     //returning an enum indicating success
     return SUCCESS;
-
-    
-
-
-
-
-
-
 
 }
