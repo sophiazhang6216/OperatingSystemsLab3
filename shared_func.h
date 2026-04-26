@@ -24,6 +24,7 @@ typedef struct tree_node {
     struct rb_node node;
     size_t cur_size;
     char line[BUF_SIZE];
+    int line_num;
 } tree_node;
 
 int handle_error(char* msg);

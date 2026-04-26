@@ -32,12 +32,14 @@ int get_one_line(char *buf, size_t* cur_size, char * dest) {
 //creates a copy of src - src[str_len], put all the info into a tree_node and inserts it into the tree
 void add_to_tree(struct rb_root * root, size_t str_len, char * src) {
     tree_node* t;
+
     t = malloc(sizeof(*t));
     if(t == NULL){
         handle_error("malloc tree_node");
     }
     t->cur_size = str_len;
     memcpy(t->line, src, str_len);
+    t->line_num = atoi(src);
     tree_insert(root, t);
 }
 
@@ -82,16 +84,17 @@ int free_tree(struct rb_root *root){
 //code from kernel.org: official linux kernel archive
 int tree_insert(struct rb_root *root, tree_node *data) {
       struct rb_node **link = &(root->rb_node), *parent = NULL;
+      int this_num, data_num, result;
 
       /* Figure out where to put link node */
       while (*link) {
             tree_node *this = rb_entry(*link, tree_node, node);
-            int result = strcmp(data->line, this->line);
-
+            this_num = this->line_num;
+            data_num = data->line_num;
             parent = *link;
-            if (result < 0)
+            if (data_num < this_num)
                 link = &((*link)->rb_left);
-            else if (result > 0)
+            else if (this_num < data_num)
                 link = &((*link)->rb_right);
             else
                 return FALSE;
@@ -103,3 +106,5 @@ int tree_insert(struct rb_root *root, tree_node *data) {
 
       return TRUE;
 }
+
+//TODO update result and updat the add_to_tree to get the proper field

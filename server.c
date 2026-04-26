@@ -20,6 +20,7 @@ typedef struct src_node {
     char buf[BUF_SIZE];
 } src_node;
 
+//takes in the source file and sees how many snippets there are so we can properly allocate an array
 int count_lines_in_file(const char * src_file_name, int* line_count) {
     FILE * src_file;
     ssize_t nread;
@@ -90,9 +91,9 @@ void read_from_file(int idx, src_node * nodes){
 }
 
 //sideffects: 
-//inits connfect_fds
+//inits connect_fds
 //inits num_fragment files
-//
+//open all the files descriped in the src_file with proper permissisons
 int open_fragment_files(const char * src_file_name, src_node ** nodes, int** connect_fds, int* num_fragment_files, int * dst_fd) {
     FILE * src_file;
     ssize_t nread;
@@ -108,12 +109,15 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
 
     *num_fragment_files = line_count - 1; // don't need to store first line (dest file name)
     
-    *connect_fds = malloc(sizeof(int) * (*num_fragment_files)); 
+    *connect_fds = malloc(sizeof(**connect_fds) * (*num_fragment_files)); 
     if (*connect_fds == NULL) {
         return handle_error("malloc connect_fds");
     }
 
-    //TODO set all the connnect_fds to -1
+    //as is good practice all unconnected fd are set to -1
+    for (i = 0; i < *num_fragment_files; i++) {
+        (*connect_fds)[i] = -1;
+    }
 
     *nodes = (src_node *)malloc(sizeof(src_node)*(*num_fragment_files));
     if (*nodes == NULL) {
@@ -151,6 +155,7 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
     return SUCCESS;
 }
 
+//creates a listening sockets
 int establish_socket(int* sfd, struct sockaddr_in* my_addr, int port_num) {
     *sfd = socket(AF_INET, SOCK_STREAM, 0);
     if (*sfd == -1) 
@@ -170,6 +175,7 @@ int establish_socket(int* sfd, struct sockaddr_in* my_addr, int port_num) {
     return SUCCESS;
 } 
 
+//blocks until a full write is complete
 void full_write(int fd, char* buf, size_t count){
     size_t written_amount, remaining;
     ssize_t write_len;
