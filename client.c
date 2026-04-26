@@ -78,10 +78,7 @@ int main (int argc, char *argv[]) {
         add_to_tree(&root, buf_len, (char*)dest_buf);
     }
     
-    while (dest_buf != NULL){
-        //send buf to server
-        tree_print(&root, sfd);
-    }
+    tree_print(&root, sfd);
 
     //hang up
     close(sfd);
