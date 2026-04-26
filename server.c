@@ -1,6 +1,5 @@
 #include "shared_func.h"
 #include <fcntl.h>
-#include <signal.h>
 
 #define LISTEN_BACKLOG 50
 #define MAX_EVENTS     10
@@ -260,10 +259,6 @@ int main(int argc, char *argv[]){
     char* temp_buf;
 
     mytree = RB_ROOT;
-
-    // ignore SIGPIPE so writes to a disconnected client return EPIPE
-    // instead of killing the server
-    signal(SIGPIPE, SIG_IGN);
 
     if (argc != EXPECTED_ARGS){
         printf("Usage: %s <input_file_name> <port number>\n", argv[0]);
