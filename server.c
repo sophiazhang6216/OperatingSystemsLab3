@@ -225,6 +225,7 @@ void read_from_socket_and_add_to_tree(struct rb_root *root, int sfd, char * temp
         }
         memcpy(node->line, temp_buf, line_len + 1);
         node->cur_size = line_len;
+        node->line_num = atoi(node->line);
 
         tree_insert(root, node);
 
