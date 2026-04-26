@@ -27,6 +27,8 @@ int main (int argc, char *argv[]) {
     char buf[BUF_SIZE];
     char dest_buf[BUF_SIZE];
 
+    mytree = RB_ROOT;
+
     if (argc != EXPECTED_ARGS) {
         printf("Usage: %s <internet address> <port number>\n", argv[0]);
         printf("Example: %s 127.0.0.1 35000\n", argv[0]);

@@ -52,7 +52,7 @@ int tree_print(struct rb_root *root, int fd)
     ssize_t w;
     char nl;
 
-    nl = '\n';
+    nl = '\n';ƒ
     for (n = rb_first(root); n; n = rb_next(n)) {
         data = rb_entry(n, tree_node, node);
         len = data->cur_size;
