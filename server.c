@@ -17,11 +17,6 @@ typedef struct src_node {
     char buf[BUF_SIZE];
 } src_node;
 
-int handle_error(char* msg) {
-    printf("Program error in %s. Reason: %s\n", msg, strerror(errno));
-    return errno;
-}
-
 int count_lines_in_file(const char * src_file_name, int* line_count) {
     FILE * src_file;
     ssize_t nread;
@@ -44,15 +39,49 @@ int count_lines_in_file(const char * src_file_name, int* line_count) {
     return SUCCESS;
 }
 
-// TODO trim all whitespace? Or start trimming from back in case preceding whitespace
-void trim_trailing_whitespace(char* line) {
+char* trim_whitespace(char* line) {
     int i;
+    char* new_start;
+    char* new_end;
+
+    // get rid of preceding whitespace
+    new_start = line;
     for (i = 0; i < strlen(line); ++i) {
         // characters covered by isspace(): ' ', '\f', '\n', '\r', '\t', '\v'
         if (isspace(line[i])) {
-            line[i] = '\0';
-            return;
+            new_start++; // ptr now points to the char after the current space
         }
+        else {
+            break;
+        }
+    }
+
+    // get rid of trailing whitespace
+    new_end = line + strlen(line); // point to current '\0' char
+    for (i = strlen(line) - 1; i > 0; --i) {
+        if (isspace(line[i])) {
+            new_end--;
+        }
+        else {
+            break;
+        }
+    }
+
+    *new_end = '\0';
+    return new_start;
+}
+
+//brings the src files into their buf
+void read_from_file(int idx, src_node * nodes){
+    FILE * file_to_read;
+    char* my_buf;
+    file_to_read = nodes[idx].ptr;
+    my_buf = nodes[idx].buf;
+    size_t newLen = fread(my_buf, sizeof(char), BUF_SIZE-1, file_to_read);
+    if ( ferror( file_to_read ) != 0 ) {
+        fputs("Error reading src file", stderr);
+    } else {
+        my_buf[newLen++] = '\0'; //TODO FIXME used to be source[newLen++] = '\0'; - is my_buf the right change?
     }
 }
 
@@ -93,7 +122,7 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
 
     i = 0;
     while (nread = getline(&line, &size, src_file) != -1){
-        //trim_trailing_whitespace(line);
+        line = trim_whitespace(line);
 
         if (i == 0){
             dst_file = fopen(line, "w");
@@ -105,7 +134,7 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
         else{
             (*nodes)[i].ptr = fopen(line, "r"); //check that we can open the file with r
             if ((*nodes)[i].ptr == NULL){
-                printf("issue with %s's line %d file name: %s\n", src_file_name, i, line);
+                printf("issue with %s's line %d file name: '%s'\n", src_file_name, i, line);
                 return handle_error("fopen input snippet file");
             }
             read_from_file(i, *nodes);
@@ -134,21 +163,6 @@ int establish_socket(int* sfd, struct sockaddr_in* my_addr, int port_num) {
 
     return SUCCESS;
 } 
-
-
-//brings the src files into their buf
-void read_from_file(int idx, src_node * nodes){
-    FILE * file_to_read;
-    char* my_buf;
-    file_to_read = nodes[idx].ptr;
-    my_buf = nodes[idx].buf;
-    size_t newLen = fread(my_buf, sizeof(char), BUF_SIZE-1, file_to_read);
-    if ( ferror( file_to_read ) != 0 ) {
-        fputs("Error reading src file", stderr);
-    } else {
-        source[newLen++] = '\0';
-    }
-}
 
 void full_write(int fd, char* buf, size_t count){
     size_t written_amount, remaining;
@@ -234,7 +248,7 @@ int main(int argc, char *argv[]){
                     handle_error("epoll_ctl add client");
                 
                 //wrapper on write that makes sure it does a full write
-                full_write(clinet_fd, nodes[started_clients].buf, nodes[started_clients].cur_size); 
+                full_write(client_fd, nodes[started_clients].buf, nodes[started_clients].cur_size); 
                 started_clients++;
 
             } else{
