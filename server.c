@@ -340,9 +340,13 @@ int main(int argc, char *argv[]){
                         if (ev_mask & EPOLLIN) {
                             read_from_socket_and_add_to_tree(&mytree, fd, temp_buf, nodes[j].buf, &nodes[j].cur_size);
                         }
-                        if(ev_mask & EPOLLRDHUP){
+                        if (ev_mask & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
                             finished_clients++;
+                            epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL);
+                            close(fd);
+                            connect_fds[j] = -1;
                         }
+                        break;
                     }
                 }
             }
