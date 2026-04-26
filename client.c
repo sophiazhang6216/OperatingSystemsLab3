@@ -37,27 +37,34 @@ int main (int argc, char *argv[]) {
     port_num = atoi(argv[2]);
 
     sfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (ret == -1) {
-        return handle_error("socket");
+    if (sfd == -1) {
+        return handle_error("socket()");
     }
 
     memset(&my_addr, 0, sizeof(my_addr));
     my_addr.sin_family = AF_INET;
     my_addr.sin_port = htons(port_num);
-    ret = inet_aton(LOCAL_LOOPBACK_IP, &my_addr.sin_addr); 
+
+    ret = inet_aton(inet_addr, &my_addr.sin_addr); 
     if (ret == 0) {
-        return handle_error("inet_aton");
+        return handle_error("inet_aton()");
     }
 
     ret = connect(sfd, (struct sockaddr *) &my_addr, sizeof(my_addr));
     if (ret == -1) {
-        return handle_error("connect");
+        printf("\nIf off-campus, run the following command on your pi:\n");
+        printf("ssh -f -N <your-username>@shell.cec.wustl.edu -L %d:shell.cec.wustl.edu:%d\n\n", port_num, port_num);
+        printf("After, you should run this program from 127.0.0.1:\n");
+        printf("%s 127.0.0.1 %d\n\n", argv[0], port_num);
+        return handle_error("connect()");
     }
+
+    printf("connected!\n");
 
     //trying to read the whole buffer, buf_len indicates how many bytes were actually read
     buf_len = read(sfd, buf, BUF_SIZE);
     if (buf_len = -1){
-        return handle_error("read");
+        return handle_error("read()");
     }
 
     //cast to unsigned bc we know that its not negative --> we can safely cast positive to unsigned
