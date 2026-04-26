@@ -3,6 +3,7 @@
 #define LISTEN_BACKLOG 50
 #define MAX_EVENTS     10
 #define EXPECTED_ARGS 3
+#define SHELL_IP_ADDR "128.252.167.161" // found in studio 18
 
 enum exit_values {
     SUCCESS = 0,
@@ -89,9 +90,8 @@ void read_from_file(int idx, src_node * nodes){
 //inits connfect_fds
 //inits num_fragment files
 //
-int open_fragment_files(const char * src_file_name, src_node ** nodes, int** connect_fds, int* num_fragment_files) {
+int open_fragment_files(const char * src_file_name, src_node ** nodes, int** connect_fds, int* num_fragment_files, int * dst_fd) {
     FILE * src_file;
-    FILE * dst_file;
     ssize_t nread;
     size_t size;
     char * line;
@@ -127,10 +127,10 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
         line = trim_whitespace(line);
 
         if (i == 0){
-            dst_file = fopen(line, "w");
-            if (src_file == NULL){
+            *dst_fd = open(line, O_WRONLY | O_TRUNC);
+            if (*dst_fd == -1){
                 printf("destination file name: %s\n", line);
-                return handle_error("fopen destination file");
+                return handle_error("open destination file");
             }
         }
         else{
@@ -182,7 +182,51 @@ void full_write(int fd, char* buf, size_t count){
     }
 }
 
+//root, fd, temp_buf, nodes[j].buf, &nodes[j].cur_size
+void read_from_socket_and_add_to_tree(struct rb_root *root, int sfd, char * temp_buf, char * src_buf, size_t * src_buf_size){
+    ssize_t nread;
+    size_t i, line_start, line_len, leftover;
+    tree_node * node;
+
+    nread = read(sfd, src_buf + *src_buf_size, BUF_SIZE - *src_buf_size);
+    if (nread <= 0) {
+        if (nread < 0) handle_error("read from client socket");
+        return;
+    }
+    *src_buf_size += (size_t)nread;
+
+    line_start = 0;
+    for (i = 0; i < *src_buf_size; i++) {
+        if (src_buf[i] != '\n') continue;
+
+        line_len = i - line_start + 1; // include the trailing '\n'
+
+        memcpy(temp_buf, src_buf + line_start, line_len);
+        temp_buf[line_len] = '\0';
+
+        node = (tree_node *)malloc(sizeof(tree_node));
+        if (node == NULL) {
+            handle_error("malloc tree_node");
+            return;
+        }
+        memcpy(node->line, temp_buf, line_len + 1);
+        node->cur_size = line_len;
+
+        tree_insert(root, node)
+
+        line_start = i + 1;
+    }
+
+    // Preserve any partial line (no trailing newline yet) at the front of src_buf
+    leftover = *src_buf_size - line_start;
+    if (leftover > 0 && line_start > 0) {
+        memmove(src_buf, src_buf + line_start, leftover);
+    }
+    *src_buf_size = leftover;
+}
+
 int main(int argc, char *argv[]){
+    int dst_fd;
     char * file_name;
     int port_num, num_fragment_files;
     struct sockaddr_in my_addr, peer_addr;
@@ -210,13 +254,13 @@ int main(int argc, char *argv[]){
     file_name = argv[1];
     port_num = atoi(argv[2]);
 
-    ret = open_fragment_files(file_name, &nodes, &connect_fds, &num_fragment_files);
+    ret = open_fragment_files(file_name, &nodes, &connect_fds, &num_fragment_files, &dst_fd);
     if (ret != SUCCESS) return ret; // error reason printed within called function
-
-    printf("about to socket\n");
 
     ret = establish_socket(&sfd, &my_addr, port_num);
     if (ret != SUCCESS) return ret; // error reason printed within called function
+
+    printf("Clients should connect to %s port %d\n", SHELL_IP_ADDR, port_num);
 
     epfd = epoll_create1(0);
     if (epfd == -1) return handle_error("epoll_create1()");
@@ -258,10 +302,7 @@ int main(int argc, char *argv[]){
                 for(j = 0; j < num_fragment_files; j++){
                     if(fd == connect_fds[j]){
                         if (ev_mask & EPOLLIN) {
-                            //read in their desc
-                            //if full read then add it to the rb tree
-                            //repeat til short read
-                            
+                            read_from_socket_and_add_to_tree(&mytree, fd, temp_buf, nodes[j].buf, &nodes[j].cur_size);
                         }
                         if(ev_mask & EPOLLRDHUP){
                             finished_clients++;
@@ -273,8 +314,8 @@ int main(int argc, char *argv[]){
     }
 
     //all of the clients are done so the red black tree is finished
-    
     //extract all of the nodes and then write it to the file
+    tree_print(mytree, dst_fd);
     
     // TODO free all the mallocs
     return 0;

@@ -78,9 +78,8 @@ int main (int argc, char *argv[]) {
     
     while (dest_buf != NULL){
         // remove top node from rb tree
-        //TODO: add function by andy!!!!
         //send buf to server
-        wrote = write(sfd, dest_buf, ubuf_len);
+        tree_print(&root, sfd);
     }
 
     //hang up
