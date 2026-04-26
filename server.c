@@ -277,6 +277,7 @@ int main(int argc, char *argv[]){
         }
         for (i = 0; i < n; i++) { //bc epoll can see multiple events ready at the same time we have to loop
             fd = events[i].data.fd;
+            printf("connection on fd %d", fd);
             ev_mask = events[i].events;
             if(fd == sfd){
                 //accept the connection
