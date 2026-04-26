@@ -32,6 +32,7 @@ int get_one_line(char *buf, size_t* cur_size, char * dest) {
 //creates a copy of src - src[str_len], put all the info into a tree_node and inserts it into the tree
 void add_to_tree(struct rb_root * root, size_t str_len, char * src) {
     tree_node* t;
+    char * end;
     long temp;
 
     t = malloc(sizeof(*t));
@@ -40,11 +41,11 @@ void add_to_tree(struct rb_root * root, size_t str_len, char * src) {
     }
     t->cur_size = str_len;
     memcpy(t->line, src, str_len);
-    temp = strtol(src);
-    t->line_num = (int)temp;
-    if(t->line_num == 0){
+    temp = strtol(src, &end, 10);
+    if(end == src){
         return;
     }
+    t->line_num = (int)temp;
     tree_insert(root, t);
 }
 
