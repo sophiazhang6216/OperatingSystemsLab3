@@ -78,7 +78,13 @@ int main (int argc, char *argv[]) {
         add_to_tree(&root, buf_len, (char*)dest_buf);
     }
     
+    printf("starting to print\n");
+    fflush(stdout);
+
     tree_print(&root, sfd);
+
+    printf("finished to print\n");
+    fflush(stdout);
 
     //hang up
     close(sfd);
