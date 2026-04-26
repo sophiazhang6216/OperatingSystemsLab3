@@ -73,9 +73,9 @@ int main (int argc, char *argv[]) {
     ubuf_len = (size_t) buf_len;
 
     //adding node to rb tree
-    while (get_one_line(buf, &ubuf_len, dest_buf)) { 
-        // can cast dest_buf to char* bc buf_len ensures the missing '\0' is ok
-        add_to_tree(&root, buf_len, (char*)dest_buf);
+    while (get_one_line(buf, &ubuf_len, dest_buf)) {
+        // dest_buf is null-terminated by get_one_line, so strlen gives the line length
+        add_to_tree(&root, strlen(dest_buf), dest_buf);
     }
     
     printf("starting to print\n");

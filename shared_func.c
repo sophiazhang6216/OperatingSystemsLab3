@@ -62,6 +62,11 @@ int tree_print(struct rb_root *root, int fd)
     for (n = rb_first(root); n; n = rb_next(n)) {
         data = rb_entry(n, tree_node, node);
         len = data->cur_size;
+
+        printf("[tree_print] fd=%d line_num=%d cur_size=%zu line=\"%.*s\"\n",
+               fd, data->line_num, len, (int)len, data->line);
+        fflush(stdout);
+
         off = 0;
         while (off < len) {
             w = write(fd, data->line + off, len - off);

@@ -200,6 +200,7 @@ void read_from_socket_and_add_to_tree(struct rb_root *root, int sfd, char * temp
     ssize_t nread;
     size_t i, line_start, line_len, leftover;
     tree_node * node;
+    char * tmp;
 
     nread = read(sfd, src_buf + *src_buf_size, BUF_SIZE - *src_buf_size);
     if (nread <= 0) {
@@ -228,8 +229,12 @@ void read_from_socket_and_add_to_tree(struct rb_root *root, int sfd, char * temp
         printf("node->line: %s\n", node->line);
         fflush(stdout);
         node->cur_size = line_len;
-        node->line_num = atoi(node->line);
-        tree_insert(root, node);
+        node->line_num = (int)(strtol(node->line, &tmp, 10));
+        if(tmp != node->line){
+            tree_insert(root, node);
+        } else{
+            free(node);
+        }
         line_start = i + 1;
     }
 
