@@ -229,9 +229,7 @@ void read_from_socket_and_add_to_tree(struct rb_root *root, int sfd, char * temp
         fflush(stdout);
         node->cur_size = line_len;
         node->line_num = atoi(node->line);
-        if(node->line_num != 0){
-            tree_insert(root, node);
-        }
+        tree_insert(root, node);
         line_start = i + 1;
     }
 
