@@ -16,12 +16,11 @@
 int main (int argc, char *argv[]) {
     char * inet_addr;
     int port_num, sfd;
-    int i, ret;
+    int ret;
     struct sockaddr_in my_addr;
     struct rb_root root;
     ssize_t buf_len;
-    size_t ubuf_len, wrote;
-    char * temp_str;
+    size_t ubuf_len;
     char buf[BUF_SIZE];
     char dest_buf[BUF_SIZE];
 

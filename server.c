@@ -313,7 +313,10 @@ int main(int argc, char *argv[]){
                 //accept the connection
                 peer_addr_size = sizeof(peer_addr);
                 client_fd = accept(sfd, NULL, NULL);
-                if (client_fd == INVALID_FD) handle_error("accept");
+                if (client_fd == INVALID_FD){
+                    handle_error("accept");
+                    continue;
+                } 
                 printf("client connected\n");
                 fflush(stdout);
                 struct epoll_event cev;
@@ -326,7 +329,7 @@ int main(int argc, char *argv[]){
                 full_write(client_fd, nodes[started_clients].buf, nodes[started_clients].cur_size); 
                 connect_fds[started_clients] = client_fd;
                 started_clients++;
-                if(started_clients >= num_fragment_filgies){ //when we hand out the last fragment stop listening
+                if(started_clients >= num_fragment_files){ //when we hand out the last fragment stop listening
                     epoll_ctl(epfd, EPOLL_CTL_DEL, sfd, NULL);
                     close(sfd);
                 }

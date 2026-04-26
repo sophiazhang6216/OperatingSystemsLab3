@@ -86,11 +86,14 @@ int tree_print(struct rb_root *root, int fd)
 
 //goes through the entire tree to remove and free all nodes
 int free_tree(struct rb_root *root){
-    struct rb_node *pos;
+    struct rb_node *pos = rb_first(root);
+    struct rb_node *next = rb_next(pos);
 
-    while (rb_next(pos) != NULL){
+    while (next != NULL){
         rb_erase(pos, root);
+        next = rb_next(pos);
         free(pos);
+        pos = next;
     }
 
     return SUCCESS;
@@ -100,7 +103,7 @@ int free_tree(struct rb_root *root){
 //code from kernel.org: official linux kernel archive
 int tree_insert(struct rb_root *root, tree_node *data) {
       struct rb_node **link = &(root->rb_node), *parent = NULL;
-      int this_num, data_num, result;
+      int this_num, data_num;
 
       /* Figure out where to put link node */
       while (*link) {
