@@ -1,3 +1,6 @@
+#Makefile for server and client genereated by Cursor
+#prompt: can you make a makefile for server and client that compiles the code and runs the server and client
+
 CC      := gcc
 CFLAGS  := -Wall -g
 LDFLAGS :=

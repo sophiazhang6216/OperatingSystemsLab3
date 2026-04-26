@@ -22,7 +22,8 @@ int get_one_line(char *buf, size_t* cur_size, char * dest) {
 
     len = (size_t)(nl - start + 1);
     memcpy(dest, buf, len);
-    start = nl + 1;
+    buf[len+1] = '\0';
+    start = nl + 2;
     *cur_size = (size_t)(end - start); //move extra to the start
     memmove(buf, start, *cur_size); //memcpy is gonna blow up bc overlap
     return 1; // TODO remove magic number
