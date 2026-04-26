@@ -40,6 +40,9 @@ void add_to_tree(struct rb_root * root, size_t str_len, char * src) {
     t->cur_size = str_len;
     memcpy(t->line, src, str_len);
     t->line_num = atoi(src);
+    if(t->line_num == 0){
+        return;
+    }
     tree_insert(root, t);
 }
 
