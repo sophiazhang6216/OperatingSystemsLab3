@@ -11,6 +11,10 @@ SHARED_OBJS := shared_func.o
 SERVER_OBJS := server.o $(SHARED_OBJS)
 CLIENT_OBJS := client.o $(SHARED_OBJS)
 
+asan: CFLAGS += -fsanitize=address,leak
+asan: LDFLAGS += -fsanitize=address,leak
+asan: all
+
 BINS := server client
 
 .PHONY: all clean
