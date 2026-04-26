@@ -1,4 +1,5 @@
 #include "shared_func.c"
+#include <fcntl.h>
 
 #define LISTEN_BACKLOG 50
 #define MAX_EVENTS     10
@@ -212,7 +213,7 @@ void read_from_socket_and_add_to_tree(struct rb_root *root, int sfd, char * temp
         memcpy(node->line, temp_buf, line_len + 1);
         node->cur_size = line_len;
 
-        tree_insert(root, node)
+        tree_insert(root, node);
 
         line_start = i + 1;
     }
@@ -294,7 +295,7 @@ int main(int argc, char *argv[]){
                     handle_error("epoll_ctl add client");
                 
                 //wrapper on write that makes sure it does a full write
-                full_write(clinet_fd, nodes[started_clients].buf, nodes[started_clients].cur_size); 
+                full_write(client_fd, nodes[started_clients].buf, nodes[started_clients].cur_size); 
                 connect_fds[started_clients] = client_fd;
                 started_clients++;
 
@@ -315,7 +316,7 @@ int main(int argc, char *argv[]){
 
     //all of the clients are done so the red black tree is finished
     //extract all of the nodes and then write it to the file
-    tree_print(mytree, dst_fd);
+    tree_print(&mytree, dst_fd);
     
     // TODO free all the mallocs
     return 0;
