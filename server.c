@@ -134,7 +134,7 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
         line = trim_whitespace(line);
 
         if (i == 0){
-            *dst_fd = open(line, O_WRONLY | O_TRUNC);
+            *dst_fd = open(line, O_WRONLY | O_CREAT | O_TRUNC, 0644);
             if (*dst_fd == -1){
                 printf("destination file name: %s\n", line);
                 return handle_error("open destination file");

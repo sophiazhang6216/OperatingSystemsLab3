@@ -22,7 +22,7 @@ int get_one_line(char *buf, size_t* cur_size, char * dest) {
 
     len = (size_t)(nl - start + 1);
     memcpy(dest, buf, len);
-    if (len < BUF_SIZE) dest[len] = '\0';
+    dest[len] = '\0';
     start = nl + 1;
     *cur_size = (size_t)(end - start); //move extra to the start
     memmove(buf, start, *cur_size); //memcpy is gonna blow up bc overlap
