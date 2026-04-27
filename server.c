@@ -102,6 +102,8 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
     char * line;
     int line_count, i, ret, idx;
 
+    line = NULL;
+
     ret = count_lines_in_file(src_file_name, &line_count);
     if (ret != SUCCESS) {
         // count_lines_in_file prints out the specific error message
@@ -152,6 +154,8 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
         }
         i++;
     }
+
+    free(line);
 
     return SUCCESS;
 }
@@ -245,7 +249,7 @@ int main(int argc, char *argv[]){
     int dst_fd;
     char * file_name;
     int port_num, num_fragment_files;
-    struct sockaddr_in my_addr, peer_addr;
+    struct sockaddr_in my_addr;
     int epfd, sfd, finished_clients, started_clients;
     struct epoll_event events[MAX_EVENTS];
     int * connect_fds;
