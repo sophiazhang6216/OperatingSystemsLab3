@@ -93,14 +93,13 @@ int tree_print(struct rb_root *root, int fd, int strip_first_word)
 
 //goes through the entire tree to remove and free all nodes
 int free_tree(struct rb_root *root){
-    struct rb_node *pos = rb_first(root);
-    struct rb_node *next = rb_next(pos);
+    struct rb_node *node;
+    tree_node *data;
 
-    while (next != NULL){
-        rb_erase(pos, root);
-        next = rb_next(pos);
-        free(pos);
-        pos = next;
+    while ((node = rb_first(root)) != NULL) {
+        data = rb_entry(node, tree_node, node);
+        rb_erase(node, root);
+        free(data);
     }
 
     return SUCCESS;
