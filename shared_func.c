@@ -85,11 +85,11 @@ int tree_print(struct rb_root *root, int fd, int strip_first_word)
         off = start;
         while (off < len) {
             w = write(fd, data->line + off, len - off);
-            if (w < 0) return -1;
+            if (w < 0) return handle_error("write");
             off += (size_t)w;
         }
         if (len == 0 || data->line[len - 1] != '\n') {
-            if (write(fd, &nl, 1) < 0) return -1;
+            if (write(fd, &nl, 1) < 0) return handle_error("write");
         }
     }
     return SUCCESS;
