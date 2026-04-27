@@ -2,7 +2,7 @@
 #prompt: can you make a makefile for server and client that compiles the code and runs the server and client
 
 CC      := gcc
-CFLAGS  := -Wall -O3
+CFLAGS  := -Wall -g -O3
 LDFLAGS :=
 
 HEADERS := shared_func.h rbtree.h
