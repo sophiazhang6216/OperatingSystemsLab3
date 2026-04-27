@@ -22,7 +22,12 @@ int main (int argc, char *argv[]) {
     ssize_t buf_len;
     size_t ubuf_len;
     char buf[BUF_SIZE];
-    char dest_buf[BUF_SIZE];
+    // dest_buf needs one extra byte so get_one_line can null-terminate even
+    // when an entire BUF_SIZE-length payload ends in '\n'. Without this,
+    // dest_buf[BUF_SIZE] = '\0' clobbers adjacent stack memory (e.g. `root`)
+    // and we crash later in free_tree.
+    char dest_buf[BUF_SIZE + 1];
+    int line_len;
 
     root = RB_ROOT;
 
@@ -71,9 +76,8 @@ int main (int argc, char *argv[]) {
     ubuf_len = (size_t) buf_len;
 
     //adding node to rb tree
-    while (get_one_line(buf, &ubuf_len, dest_buf)) {
-        // dest_buf is null-terminated by get_one_line, so strlen gives the line length
-        add_to_tree(&root, strlen(dest_buf), dest_buf);
+    while ((line_len = get_one_line(buf, &ubuf_len, dest_buf)) > 0) {
+        add_to_tree(&root, (size_t)line_len, dest_buf);
     }
     
     printf("starting to print\n");

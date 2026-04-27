@@ -22,7 +22,7 @@ typedef struct src_node {
 int count_lines_in_file(const char * src_file_name, int* line_count) {
     FILE * src_file;
     ssize_t nread;
-    char * line;
+    char * line = NULL;
     size_t size = 0;
 
     *line_count = 0;
@@ -36,6 +36,7 @@ int count_lines_in_file(const char * src_file_name, int* line_count) {
         (*line_count)++;
     }
 
+    free(line);
     fclose(src_file);
 
     return SUCCESS;

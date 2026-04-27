@@ -41,11 +41,13 @@ void add_to_tree(struct rb_root * root, size_t str_len, char * src) {
     t = malloc(sizeof(*t));
     if(t == NULL){
         handle_error("malloc tree_node");
+        return;
     }
     t->cur_size = str_len;
     memcpy(t->line, src, str_len);
     temp = strtol(src, &end, BASE_10);
     if(end == src){
+        free(t);
         return;
     }
     t->line_num = (int)temp;
@@ -91,17 +93,16 @@ int tree_print(struct rb_root *root, int fd, int strip_first_word)
     return SUCCESS;
 }
 
-//goes through the entire tree to remove and free all nodes
-int free_tree(struct rb_root *root){
-    struct rb_node *node;
-    tree_node *data;
+void free_subtree(struct rb_node *n) {
+    if (!n) return;
+    free_subtree(n->rb_left);
+    free_subtree(n->rb_right);
+    free(rb_entry(n, tree_node, node));
+}
 
-    while ((node = rb_first(root)) != NULL) {
-        data = rb_entry(node, tree_node, node);
-        rb_erase(node, root);
-        free(data);
-    }
-
+int free_tree(struct rb_root *root) {
+    free_subtree(root->rb_node);
+    root->rb_node = NULL;
     return SUCCESS;
 }
 
