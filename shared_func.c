@@ -52,7 +52,8 @@ void add_to_tree(struct rb_root * root, size_t str_len, char * src) {
     tree_insert(root, t);
 }
 
-
+//adding the strip_first_word functionality was generated with ai using a prompt of "add a parameter to this function that says whether or not we want to remove the first "word" from each line."
+//prints out the tree in order to the fd
 int tree_print(struct rb_root *root, int fd, int strip_first_word)
 {
     struct rb_node *n;
@@ -71,7 +72,7 @@ int tree_print(struct rb_root *root, int fd, int strip_first_word)
         if (strip_first_word) {
             space = memchr(data->line, ' ', len);
             if (space != NULL) {
-                start = (size_t)(space - data->line) + 1; // kip past the space
+                start = (size_t)(space - data->line) + 1; //kip past the space
             } else {
                 continue; //if no space its a poorly formed line so skip
             }

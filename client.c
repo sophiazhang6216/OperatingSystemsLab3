@@ -35,6 +35,7 @@ int main (int argc, char *argv[]) {
     inet_addr = argv[INET_ADDR_INDEX];
     port_num = atoi(argv[PORT_NUM_INDEX]);
 
+    //establish a socket
     sfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sfd == -1) {
         return handle_error("socket()");

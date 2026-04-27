@@ -79,6 +79,7 @@ void read_from_file(int idx, src_node * nodes){
     char* my_buf;
     file_to_read = nodes[idx].ptr;
     my_buf = nodes[idx].buf;
+    //i don't know if putting sizeof(char) is good style because char is gaurenteed to be 1 byte by the C standard
     size_t newLen = fread(my_buf, sizeof(char), BUF_SIZE-1, file_to_read);
     if ( ferror( file_to_read ) != 0 ) {
         fputs("Error reading src file", stderr);
@@ -86,6 +87,7 @@ void read_from_file(int idx, src_node * nodes){
         my_buf[newLen++] = '\0';
         nodes[idx].cur_size = newLen;
     }
+    fclose(file_to_read);
 }
 
 //sideffects: 
@@ -346,6 +348,8 @@ int main(int argc, char *argv[]){
     //extract all of the nodes and then write it to the file
     tree_print(&mytree, dst_fd, TRUE);
     
+    close(dst_fd); //we wrote to the file so good to close
+
     //free all the mallocs
     free_tree(&mytree);
     free(connect_fds);
