@@ -78,7 +78,7 @@ int main (int argc, char *argv[]) {
     printf("starting to print\n");
     fflush(stdout);
 
-    tree_print(&root, sfd);
+    tree_print(&root, sfd, FALSE);
 
     printf("finished to print\n");
     fflush(stdout);

@@ -181,8 +181,6 @@ void full_write(int fd, char* buf, size_t count){
     remaining = count;
 
     while(remaining > 0){
-        printf("writing to client at fd %d", fd);
-        fflush(stdout);
         write_len = write(fd, buf+written_amount, remaining);
         if(write_len == -1){
             handle_error("full_write()");
@@ -221,11 +219,7 @@ void read_from_socket_and_add_to_tree(struct rb_root *root, int sfd, char * temp
             handle_error("malloc tree_node");
             return;
         }
-        printf("string being added %s\n", temp_buf);
-        fflush(stdout);
         memcpy(node->line, temp_buf, line_len + 1);
-        printf("node->line: %s\n", node->line);
-        fflush(stdout);
         node->cur_size = line_len;
         node->line_num = (int)(strtol(node->line, &tmp, BASE_10));
         if(tmp != node->line){
@@ -296,17 +290,12 @@ int main(int argc, char *argv[]){
     client_fd = INVALID_FD;
     temp_buf = malloc(BUF_SIZE);
     while(finished_clients != num_fragment_files) {
-        printf("waiting\n");
-        fflush(stdout);
         n = epoll_wait(epfd, events, MAX_EVENTS, INF_TIMEOUT);
         if (n == -1) {
             return handle_error("epoll_wait()");
         }
-        printf("about to for loop\n");
-        fflush(stdout);
         for (i = 0; i < n; i++) { //bc epoll can see multiple events ready at the same time we have to loop
             fd = events[i].data.fd;
-            printf("connection on fd %d\n\n", fd);
             fflush(stdout);
             ev_mask = events[i].events;
             if(fd == sfd){
@@ -355,7 +344,7 @@ int main(int argc, char *argv[]){
 
     //all of the clients are done so the red black tree is finished
     //extract all of the nodes and then write it to the file
-    tree_print(&mytree, dst_fd);
+    tree_print(&mytree, dst_fd, TRUE);
     
     //free all the mallocs
     free_tree(&mytree);

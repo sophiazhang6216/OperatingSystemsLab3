@@ -40,4 +40,4 @@ int get_one_line(char *buf, size_t* cur_size, char * dest);
 void add_to_tree(struct rb_root * root, size_t str_len, char * src);
 int tree_insert(struct rb_root *root, tree_node *data);
 int free_tree(struct rb_root *root);
-int tree_print(struct rb_root *root, int fd);
+int tree_print(struct rb_root *root, int fd, int strip_first_word);

@@ -53,25 +53,31 @@ void add_to_tree(struct rb_root * root, size_t str_len, char * src) {
 }
 
 
-int tree_print(struct rb_root *root, int fd)
+int tree_print(struct rb_root *root, int fd, int strip_first_word)
 {
     struct rb_node *n;
     tree_node *data;
-    size_t len;
-    size_t off;
+    size_t len, off, start;
     ssize_t w;
     char nl;
+    char *space;
 
-    nl = '\n'; // new line character
+    nl = '\n';
     for (n = rb_first(root); n; n = rb_next(n)) {
         data = rb_entry(n, tree_node, node);
-        len = data->cur_size;
+        len   = data->cur_size;
+        start = 0;
 
-        printf("[tree_print] fd=%d line_num=%d cur_size=%zu line=\"%.*s\"\n",
-               fd, data->line_num, len, (int)len, data->line);
-        fflush(stdout);
+        if (strip_first_word) {
+            space = memchr(data->line, ' ', len);
+            if (space != NULL) {
+                start = (size_t)(space - data->line) + 1; // kip past the space
+            } else {
+                continue; //if no space its a poorly formed line so skip
+            }
+        }
 
-        off = 0;
+        off = start;
         while (off < len) {
             w = write(fd, data->line + off, len - off);
             if (w < 0) return -1;
