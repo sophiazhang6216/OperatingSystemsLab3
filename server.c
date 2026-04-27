@@ -42,36 +42,35 @@ int count_lines_in_file(const char * src_file_name, int* line_count) {
     return SUCCESS;
 }
 
+// Trims leading and trailing whitespace IN PLACE, shifting the trimmed content
+// to the start of the buffer. Returns the original `line` pointer so callers
+// can safely pass it back to getline/free without losing the malloc base.
+// characters covered by isspace(): ' ', '\f', '\n', '\r', '\t', '\v'
+//original the function was human written but changed to ai generated using the prompt "write a function that trims leading and trailing whitespace in a string in place and returns the original pointer so callers can safely pass it back to getline/free without losing the malloc base."
 char* trim_whitespace(char* line) {
-    int i;
-    char* new_start;
-    char* new_end;
+    size_t len, start, end, new_len;
 
-    // get rid of preceding whitespace
-    new_start = line;
-    for (i = 0; i < strlen(line); ++i) {
-        // characters covered by isspace(): ' ', '\f', '\n', '\r', '\t', '\v'
-        if (isspace(line[i])) {
-            new_start++; // ptr now points to the char after the current space
-        }
-        else {
-            break;
-        }
+    if (line == NULL) return NULL;
+
+    len = strlen(line);
+
+    start = 0;
+    while (start < len && isspace((unsigned char)line[start])) {
+        start++;
     }
 
-    // get rid of trailing whitespace
-    new_end = line + strlen(line); // point to current '\0' char
-    for (i = strlen(line) - 1; i > 0; --i) {
-        if (isspace(line[i])) {
-            new_end--;
-        }
-        else {
-            break;
-        }
+    end = len;
+    while (end > start && isspace((unsigned char)line[end - 1])) {
+        end--;
     }
 
-    *new_end = '\0';
-    return new_start;
+    new_len = end - start;
+    if (start > 0 && new_len > 0) {
+        memmove(line, line + start, new_len);
+    }
+    line[new_len] = '\0';
+
+    return line;
 }
 
 //brings the src files into their buf
