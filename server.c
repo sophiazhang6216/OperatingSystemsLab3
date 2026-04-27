@@ -155,6 +155,7 @@ int open_fragment_files(const char * src_file_name, src_node ** nodes, int** con
     }
 
     free(line);
+    fclose(src_file);
 
     return SUCCESS;
 }
