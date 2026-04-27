@@ -230,7 +230,9 @@ void read_from_socket_and_add_to_tree(struct rb_root *root, int sfd, char * temp
         node->cur_size = line_len;
         node->line_num = (int)(strtol(node->line, &tmp, BASE_10));
         if(tmp != node->line){
-            tree_insert(root, node);
+            if(tree_insert(root, node) == FALSE){
+                free(node); 
+            }
         } else{
             free(node);
         }
