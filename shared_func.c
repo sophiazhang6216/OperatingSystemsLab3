@@ -74,9 +74,13 @@ int tree_print(struct rb_root *root, int fd, int strip_first_word)
         if (strip_first_word) {
             space = memchr(data->line, ' ', len);
             if (space != NULL) {
-                start = (size_t)(space - data->line) + 1; //kip past the space
+                start = (size_t)(space - data->line) + 1; //skip past the space
             } else {
-                continue; //if no space its a poorly formed line so skip
+                // No space means the line is just "<line_num>\n" with no
+                // content - i.e. an originally blank line. Emit a newline
+                // so the blank line's position is preserved.
+                if (write(fd, &nl, 1) < 0) return -1;
+                continue;
             }
         }
 
