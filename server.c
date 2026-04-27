@@ -245,7 +245,6 @@ int main(int argc, char *argv[]){
     char * file_name;
     int port_num, num_fragment_files;
     struct sockaddr_in my_addr, peer_addr;
-    socklen_t peer_addr_size;
     int epfd, sfd, finished_clients, started_clients;
     struct epoll_event events[MAX_EVENTS];
     int * connect_fds;
@@ -301,8 +300,6 @@ int main(int argc, char *argv[]){
             fflush(stdout);
             ev_mask = events[i].events;
             if(fd == sfd){
-                //accept the connection
-                peer_addr_size = sizeof(peer_addr);
                 client_fd = accept(sfd, NULL, NULL);
                 if (client_fd == INVALID_FD){
                     handle_error("accept");
