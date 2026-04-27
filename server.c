@@ -47,6 +47,8 @@ int count_lines_in_file(const char * src_file_name, int* line_count) {
 // can safely pass it back to getline/free without losing the malloc base.
 // characters covered by isspace(): ' ', '\f', '\n', '\r', '\t', '\v'
 //original the function was human written but changed to ai generated using the prompt "write a function that trims leading and trailing whitespace in a string in place and returns the original pointer so callers can safely pass it back to getline/free without losing the malloc base."
+//this issue was simply that we were incrementing a pointer that was malloc'd so then free wasn't working properly
+//this fixes that issue by simply shifting the contents of the array instead of the pointer
 char* trim_whitespace(char* line) {
     size_t len, start, end, new_len;
 

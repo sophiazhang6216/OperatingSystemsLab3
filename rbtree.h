@@ -1,4 +1,6 @@
 //This code is complete AI generated
+//It generated a classic red black tree which is just a balanced binary search tree
+//the actual code we use to interface with it is defined in shared_func
 //Prompt: can you make a redblack tree with the same interface as <linux/rbtree.h> so rb_node rb_root rb_left rb_right rb_link_node rb_insert_color rb_erase
 //Here is the response:
 
