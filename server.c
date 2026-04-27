@@ -203,7 +203,7 @@ void read_from_socket_and_add_to_tree(struct rb_root *root, int sfd, char * temp
     ssize_t nread;
     size_t i, line_start, line_len, leftover;
     tree_node * node;
-    char tmp[BUF_SIZE];
+    char * tmp;
 
     nread = read(sfd, src_buf + *src_buf_size, BUF_SIZE - *src_buf_size);
     if (nread <= 0) {
