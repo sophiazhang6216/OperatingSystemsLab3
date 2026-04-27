@@ -64,7 +64,7 @@ int main (int argc, char *argv[]) {
         return handle_error("connect()");
     }
 
-    printf("connected!\n");
+    //printf("connected!\n");
 
     //trying to read the whole buffer, buf_len indicates how many bytes were actually read
     buf_len = read(sfd, buf, BUF_SIZE);
@@ -80,13 +80,13 @@ int main (int argc, char *argv[]) {
         add_to_tree(&root, (size_t)line_len, dest_buf);
     }
     
-    printf("starting to print\n");
-    fflush(stdout);
+    // printf("starting to print\n");
+    // fflush(stdout);
 
     tree_print(&root, sfd, FALSE);
 
-    printf("finished to print\n");
-    fflush(stdout);
+    // printf("finished to print\n");
+    // fflush(stdout);
 
     //hang up
     close(sfd);
