@@ -205,6 +205,8 @@ void read_from_socket_and_add_to_tree(struct rb_root *root, int sfd, char * temp
     tree_node * node;
     char * tmp;
 
+    tmp = NULL;
+
     nread = read(sfd, src_buf + *src_buf_size, BUF_SIZE - *src_buf_size);
     if (nread <= 0) {
         if (nread < 0) handle_error("read from client socket");
@@ -243,6 +245,7 @@ void read_from_socket_and_add_to_tree(struct rb_root *root, int sfd, char * temp
         memmove(src_buf, src_buf + line_start, leftover);
     }
     *src_buf_size = leftover;
+    free(tmp);
 }
 
 int main(int argc, char *argv[]){
